@@ -4,6 +4,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useWindowSize } from "@vueuse/core";
 // import { fabric } from "fabric";
+// @ts-ignore
 import { fabric } from "fabric-with-erasing";
 import {
   Undo2,
@@ -261,7 +262,7 @@ const currentShape = ref<ShapeName>("rect");
 /**
  * @description 选择不同的形状
  */
-function handleShapeChange(e) {
+function handleShapeChange(e: any) {
   const target = e.target.closest("[data-shape]");
   if (target) {
     const shape = target.dataset.shape;
@@ -315,7 +316,7 @@ function shapeToggleHandler() {
   canvas.on("mouse:up", shapeMouseUpHandler);
 }
 
-function shapeMouseDownHandler(opt) {
+function shapeMouseDownHandler(opt: any) {
   const pointer = canvas!.getPointer(opt.e);
   lastPosX.value = pointer!.x;
   lastPosY.value = pointer!.y;
@@ -331,7 +332,7 @@ function shapeMouseDownHandler(opt) {
   canvas?.add(tempObj!);
 }
 
-function shapeMouseMoveHandler(opt) {
+function shapeMouseMoveHandler(opt: any) {
   if (!isDragging.value || !tempObj) return;
   const pointer = canvas!.getPointer(opt.e);
   const width = Math.abs(pointer.x - lastPosX.value);
@@ -377,7 +378,7 @@ const currentSelectedToolbarItemName = ref<ToolBarItemName>("mouse");
 /**
  * @description toolbar item点击事件
  */
-function handleToolbarChange(e) {
+function handleToolbarChange(e: any) {
   const target = e.target.closest("[data-baritem]");
   if (target) {
     const clickedItemName = target.dataset.baritem;
