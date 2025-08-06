@@ -131,6 +131,14 @@ function handToggleHandler() {
   if (canvas) {
     canvas.isDrawingMode = false;
     canvas.defaultCursor = "move";
+    canvas.off("mouse:down", canvasMouseDownHandler);
+    canvas.off("mouse:up", canvasMouseUpHandler);
+    canvas.off("mouse:move", canvasMouseMoveHandler);
+    canvas.off("mouse:down", createITextHandler);
+    // 控制图形绘制大小
+    canvas.off("mouse:down", shapeMouseDownHandler);
+    canvas.off("mouse:move", shapeMouseMoveHandler);
+    canvas.off("mouse:up", shapeMouseUpHandler);
     canvas.on("mouse:down", canvasMouseDownHandler);
     canvas.on("mouse:up", canvasMouseUpHandler);
     canvas.on("mouse:move", canvasMouseMoveHandler);
@@ -157,8 +165,12 @@ function pencilToggleHandler() {
  */
 function eraserToggleHandler() {
   if (canvas) {
-    canvas.off("mouse:down", shapeMouseDownHandler);
+    canvas.off("mouse:down", canvasMouseDownHandler);
+    canvas.off("mouse:up", canvasMouseUpHandler);
+    canvas.off("mouse:move", canvasMouseMoveHandler);
+    canvas.off("mouse:down", createITextHandler);
     // 控制图形绘制大小
+    canvas.off("mouse:down", shapeMouseDownHandler);
     canvas.off("mouse:move", shapeMouseMoveHandler);
     canvas.off("mouse:up", shapeMouseUpHandler);
     canvas.isDrawingMode = true;
@@ -282,7 +294,7 @@ function createShape(shape: ShapeName, options?: any) {
     });
   } else if (shape == "circle") {
     return new fabric.Circle({
-      fill: "red",
+      fill: currentColor.value,
       radius: 0,
       // stroke: "red",
       // strokeWidth: 3,
@@ -308,7 +320,15 @@ function shapeToggleHandler() {
   // console.log("zhjixongle");
 
   if (!canvas) return;
-
+  canvas.isDrawingMode = false;
+  canvas.off("mouse:down", canvasMouseDownHandler);
+  canvas.off("mouse:up", canvasMouseUpHandler);
+  canvas.off("mouse:move", canvasMouseMoveHandler);
+  canvas.off("mouse:down", createITextHandler);
+  // 控制图形绘制大小
+  canvas.off("mouse:down", shapeMouseDownHandler);
+  canvas.off("mouse:move", shapeMouseMoveHandler);
+  canvas.off("mouse:up", shapeMouseUpHandler);
   // 选择图形并创建
   canvas.on("mouse:down", shapeMouseDownHandler);
   // 控制图形绘制大小
