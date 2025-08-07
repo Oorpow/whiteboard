@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// TODO 上一步、下一步 (历史记录、队列实现)
+// TODO 上一步、下一步 (历史记录、双数组实现、存储画布状态json)
 // TODO 屏幕尺寸发生变化时，canvas需要重绘（节流）
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useWindowSize } from "@vueuse/core";
@@ -18,6 +18,7 @@ import {
   Square,
   Circle,
   Triangle,
+  Trash,
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -36,6 +37,13 @@ const isShowPencilToolbar = ref(false);
 // 是否展示形状工具栏
 const isShowShapeToolbar = ref(false);
 
+// 历史记录
+const historyStack = ref<string[]>([]);
+// 重做栈
+const redoStack = ref<string[]>([]);
+// 在undo/redo时，禁止记录快照的flag
+const isProcessingHistory = ref(false);
+
 /**
  * @description 初始化canvas编辑器
  */
@@ -45,7 +53,11 @@ function initCanvasEditor() {
     height: height.value,
     backgroundColor: "#f1f5f9",
   });
+  canvas.on("object:modified", saveSnapshot);
+  canvas.on("path:created", saveSnapshot);
   canvas.on("mouse:wheel", canvasMouseWheelHandler);
+
+  saveSnapshot();
 }
 
 /**
@@ -363,7 +375,6 @@ function shapeMouseMoveHandler(opt: any) {
   if (currentShape.value === "circle") {
     // 圆形以直径为基础，left/top 为左上角
     const radius = Math.max(width, height) / 2;
-    // console.log("ininon");
 
     tempObj.set({
       left: minX,
@@ -391,6 +402,7 @@ function shapeMouseMoveHandler(opt: any) {
 function shapeMouseUpHandler() {
   isDragging.value = false;
   tempObj = null;
+  saveSnapshot();
 }
 
 const currentSelectedToolbarItemName = ref<ToolBarItemName>("mouse");
@@ -406,6 +418,17 @@ function handleToolbarChange(e: any) {
     isShowPencilToolbar.value =
       currentSelectedToolbarItemName.value == "pencil";
     isShowShapeToolbar.value = currentSelectedToolbarItemName.value == "shape";
+  }
+}
+
+/**
+ * @description 清空画布
+ */
+function clearBoardToggleHandler() {
+  if (!canvas) return;
+  const children = canvas.getObjects();
+  if (children.length) {
+    canvas.remove(...children);
   }
 }
 
@@ -427,6 +450,8 @@ watch(currentSelectedToolbarItemName, (newToolbarItemName) => {
     eraserToggleHandler();
   } else if (newToolbarItemName == "shape") {
     shapeToggleHandler();
+  } else if (newToolbarItemName == "clear") {
+    clearBoardToggleHandler();
   }
 });
 
@@ -438,6 +463,58 @@ watch(pencilSize, (newPencilSize) => {
     updateFreeDrawingBrush(currentColor.value);
   }
 });
+
+/**
+ * @description 记录画布快照
+ */
+function saveSnapshot() {
+  if (!canvas) return;
+  redoStack.value.length = 0;
+  const jsonState = JSON.stringify(canvas.toJSON());
+  historyStack.value.push(jsonState);
+}
+
+/**
+ * @description 撤销
+ * 思路：一个数组存储画布历史状态historyStack，一个数组存储画布最新的状态redoStack，当undo时，将当前状态push进redoStack，并渲染historyStack最后一次json
+ */
+function undo() {
+  if (historyStack.value.length > 1 && canvas) {
+    isProcessingHistory.value = true;
+    const currentState = historyStack.value.pop();
+    if (currentState) {
+      redoStack.value.push(currentState);
+    }
+    const prevState = historyStack.value[historyStack.value.length - 1];
+    canvas.loadFromJSON(prevState, () => {
+      setTimeout(() => {
+        canvas?.renderAll();
+        isProcessingHistory.value = false;
+      }, 0);
+    });
+  }
+}
+
+/**
+ * @description 重做
+ * 思路：同上，执行redo时，将状态从redoStack中弹出，推入historyStack
+ */
+function redo() {
+  if (redoStack.value.length > 0 && canvas) {
+    isProcessingHistory.value = true;
+
+    const newestState = redoStack.value.pop();
+    if (newestState) {
+      historyStack.value.push(newestState);
+      canvas.loadFromJSON(newestState, () => {
+        setTimeout(() => {
+          canvas?.renderAll();
+          isProcessingHistory.value = false;
+        }, 0);
+      });
+    }
+  }
+}
 
 onMounted(() => {
   initCanvasEditor();
@@ -511,10 +588,10 @@ onBeforeUnmount(() => {
     <div class="toolbar fixed bottom-3 left-1/2 -translate-x-1/2">
       <div class="flex items-center gap-3">
         <div class="bg-white border py-[7px] px-2 rounded-lg">
-          <Button variant="ghost" size="icon" disabled>
+          <Button variant="ghost" size="icon" @click="undo">
             <Undo2 />
           </Button>
-          <Button variant="ghost" size="icon" disabled>
+          <Button variant="ghost" size="icon" @click="redo">
             <Redo2 />
           </Button>
         </div>
@@ -573,6 +650,14 @@ onBeforeUnmount(() => {
             "
           >
             <Eraser />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            data-baritem="clear"
+            :class="currentSelectedToolbarItemName == 'clear' && 'bg-slate-100'"
+          >
+            <Trash />
           </Button>
         </div>
       </div>

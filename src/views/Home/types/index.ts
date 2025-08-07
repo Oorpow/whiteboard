@@ -4,7 +4,8 @@ export type ToolBarItemName =
   | "pencil"
   | "text"
   | "eraser"
-  | "shape";
+  | "shape"
+  | "clear";
 
 export type ToggleButtonName =
   | "mouse"
