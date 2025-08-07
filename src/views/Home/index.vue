@@ -588,10 +588,20 @@ onBeforeUnmount(() => {
     <div class="toolbar fixed bottom-3 left-1/2 -translate-x-1/2">
       <div class="flex items-center gap-3">
         <div class="bg-white border py-[7px] px-2 rounded-lg">
-          <Button variant="ghost" size="icon" @click="undo">
+          <Button
+            variant="ghost"
+            size="icon"
+            @click="undo"
+            :disabled="!(historyStack.length > 1)"
+          >
             <Undo2 />
           </Button>
-          <Button variant="ghost" size="icon" @click="redo">
+          <Button
+            variant="ghost"
+            size="icon"
+            @click="redo"
+            :disabled="!(redoStack.length > 0)"
+          >
             <Redo2 />
           </Button>
         </div>
